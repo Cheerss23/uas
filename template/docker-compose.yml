@@ -1,0 +1,46 @@
+services:
+  uas_pemweb:
+    build: ./php
+    image: uas_pemweb_php:latest
+    container_name: uas_pemweb
+    hostname: "uas_pemweb"
+    volumes:
+      - ./src:/var/www/html
+      - ./php/www.conf:/usr/local/etc/php-fpm.d/www.conf
+    working_dir: /var/www/html
+    depends_on:
+      - uas_pemweb_db
+
+  uas_pemweb_db:
+    image: mariadb:10.11
+    container_name: uas_pemweb_db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "13306:3306"
+    volumes:
+      - ./db/data:/var/lib/mysql
+      - ./nginx/default.conf.template:/etc/nginx/conf.d/default.conf:ro
+
+    environment:
+      MYSQL_USER: djambred
+      MYSQL_PASSWORD: p455w0rd1!.
+      MYSQL_ROOT_PASSWORD: p455w0rd
+      TZ: Asia/Jakarta
+      SERVICE_TAGS: dev
+      SERVICE_NAME: uas_pemweb_db
+
+  uas_pemweb_nginx:
+    build: ./nginx
+    image: uas_pemweb_nginx:latest
+    container_name: uas_pemweb_nginx
+    hostname: "uas_pemweb_nginx"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - uas_pemweb
